@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LendFlow — Smart Loan & Interest Manager</title>
+    <meta name="description" content="Professional money lending and interest management system for small-scale lenders.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    
+    <style>
+        :root { --bg: #f0f2f5; --bg-sidebar: #0f172a; --primary: #6366f1; }
+        [data-theme="dark"] { --bg: #0f172a; --bg-sidebar: #020617; }
+        body { background: var(--bg); margin: 0; font-family: 'Inter', sans-serif; }
+        .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%); opacity: 0; transition: opacity 0.3s; }
+        .auth-screen.ready { opacity: 1; }
+    </style>
+    
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+    <!-- AUTH SCREEN -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-brand">
+                <div class="auth-logo"><span class="material-icons-round">account_balance</span></div>
+                <h1>LendFlow</h1>
+                <p>Smart Loan & Interest Manager</p>
+            </div>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <div class="input-icon"><span class="material-icons-round">email</span>
+                        <input type="text" id="loginEmail" required placeholder="Email or Username">
+                    </div>
+                </div>
+                <div class="form-group" style="position:relative">
+                    <label>Password</label>
+                    <div class="input-icon"><span class="material-icons-round">lock</span>
+                        <input type="password" id="loginPassword" required placeholder="••••••••">
+                    </div>
+                    <a href="#" id="forgotPassBtn" style="position:absolute;right:0;top:0;font-size:11px;color:var(--primary);text-decoration:none">Forgot?</a>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+                    <span class="material-icons-round">login</span> Sign In
+                </button>
+            </form>
+            <div id="authError" class="auth-error" style="display:none"></div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="appShell" class="app-shell" style="display:none">
+        <!-- LICENSE LOCK OVERLAY -->
+        <div id="licenseLock" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.98);z-index:99999;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px">
+            <span class="material-icons-round" style="font-size:80px;color:#f43f5e;margin-bottom:20px">lock_clock</span>
+            <h1 style="font-size:32px;margin-bottom:10px">LICENSE EXPIRED</h1>
+            <p style="font-size:18px;color:#94a3b8;max-width:500px">Your branch access has been restricted because your AMC contract has expired. Please contact the Super Admin to renew your license.</p>
+            <div style="margin-top:30px;padding:15px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.1)">
+                <small style="text-transform:uppercase;letter-spacing:1px;color:#6366f1">Support Contact</small>
+                <h2 style="margin:5px 0">VIGNESH</h2>
+                <p style="margin:0;color:#94a3b8;font-weight:600">9360039283</p>
+                <div style="display:flex;gap:10px;justify-content:center;margin-top:15px">
+                    <a id="lockWaBtn" href="https://wa.me/919360039283" target="_blank" class="btn btn-primary" style="background:#25D366;border:none">
+                        <span class="material-icons-round">chat</span> WhatsApp
+                    </a>
+                    <button class="btn btn-outline" onclick="Auth.logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-brand">
+                <span class="material-icons-round">account_balance</span>
+                <h2>LendFlow</h2>
+                <button class="sidebar-close" id="sidebarClose"><span class="material-icons-round">close</span></button>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-page="dashboard">
+                    <span class="material-icons-round">dashboard</span><span>Dashboard</span>
+                </a>
+                <a class="nav-item" data-page="customers">
+                    <span class="material-icons-round">people</span><span>Customers</span>
+                </a>
+                <a class="nav-item" data-page="loans">
+                    <span class="material-icons-round">payments</span><span>Loans</span>
+                </a>
+                <a class="nav-item" data-page="payments">
+                    <span class="material-icons-round">receipt_long</span><span>Payments</span>
+                </a>
+                <a class="nav-item" data-page="schedule">
+                    <span class="material-icons-round">calendar_month</span><span>Schedule</span>
+                </a>
+                <a class="nav-item admin-only" data-page="reports" style="display:none">
+                    <span class="material-icons-round">bar_chart</span><span>Reports</span>
+                </a>
+                <div class="nav-divider"></div>
+                <a class="nav-item superadmin-only" data-page="branches" style="display:none">
+                    <span class="material-icons-round">store</span><span>Branches</span>
+                </a>
+                <a class="nav-item superadmin-only" data-page="amc" style="display:none">
+                    <span class="material-icons-round">description</span><span>AMC Management</span>
+                </a>
+                <a class="nav-item branch-admin-only" data-page="staff-mgmt" style="display:none">
+                    <span class="material-icons-round">groups</span><span>Staff</span>
+                </a>
+                <a class="nav-item admin-only" data-page="settings" style="display:none">
+                    <span class="material-icons-round">settings</span><span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-details">
+                        <span id="userName">Admin</span>
+                        <small id="userEmail">admin@example.com</small>
+                    </div>
+                </div>
+                <button class="btn-icon" id="logoutBtn" title="Logout" onclick="Auth.logout()">
+                    <span class="material-icons-round">logout</span>
+                </button>
+            </div>
+            <div id="licenseExpiryBox" style="padding:10px;background:rgba(255,255,255,0.05);font-size:10px;color:#94a3b8;border-top:1px solid rgba(255,255,255,0.1);display:none">
+                <span class="material-icons-round" style="font-size:12px;vertical-align:middle;margin-right:4px">verified_user</span>
+                License Expires: <span id="licenseExpiryDate">N/A</span>
+            </div>
+            <div style="padding:10px;font-size:9px;color:#64748b;text-align:center;border-top:1px solid rgba(255,255,255,0.05)">
+                APP DEVELOPED BY VIGNESH<br>CONTACT: 9360039283
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <header class="topbar">
+                <button class="btn-icon" id="menuToggle"><span class="material-icons-round">menu</span></button>
+                <h1 id="pageTitle">Dashboard</h1>
+                <div class="topbar-actions">
+                    <div id="licenseBadge" class="license-badge" style="display:none">
+                        <span class="material-icons-round">verified_user</span>
+                        Expires: <span id="licenseExpiryDateTop">N/A</span>
+                    </div>
+                    <select id="branchSelector" class="form-select" style="display:none;width:auto;min-width:150px;font-size:13px;padding:6px 10px">
+                        <option value="">All Branches</option>
+                    </select>
+                    <button class="btn-icon" id="themeToggle" title="Toggle theme">
+                        <span class="material-icons-round">dark_mode</span>
+                    </button>
+                    <button class="btn-icon notification-btn" id="notifBtn" title="Notifications">
+                        <span class="material-icons-round">notifications</span>
+                        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-area" id="contentArea">
+                <!-- DASHBOARD PAGE -->
+                <section id="page-dashboard" class="page active">
+                    <div class="stats-grid">
+                        <div class="stat-card stat-blue">
+                            <div class="stat-icon"><span class="material-icons-round">currency_rupee</span></div>
+                            <div class="stat-info"><h3 id="statTotalGiven">₹0</h3><p>Total Lent</p></div>
+                        </div>
+                        <div class="stat-card stat-green">
+                            <div class="stat-icon"><span class="material-icons-round">download_done</span></div>
+                            <div class="stat-info"><h3 id="statTotalCollected">₹0</h3><p>Total Collected</p></div>
+                        </div>
+                        <div class="stat-card stat-purple">
+                            <div class="stat-icon"><span class="material-icons-round">trending_up</span></div>
+                            <div class="stat-info"><h3 id="statInterestEarned">₹0</h3><p>Interest Earned</p></div>
+                        </div>
+                        <div class="stat-card stat-orange">
+                            <div class="stat-icon"><span class="material-icons-round">pending_actions</span></div>
+                            <div class="stat-info"><h3 id="statPending">₹0</h3><p>Pending</p></div>
+                        </div>
+                        <div class="stat-card stat-red">
+                            <div class="stat-icon"><span class="material-icons-round">warning</span></div>
+                            <div class="stat-info"><h3 id="statOverdue">0</h3><p>Overdue Loans</p></div>
+                        </div>
+                        <div class="stat-card stat-teal">
+                            <div class="stat-icon"><span class="material-icons-round">people</span></div>
+                            <div class="stat-info"><h3 id="statCustomers">0</h3><p>Customers</p></div>
+                        </div>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header"><h3>Upcoming Dues</h3></div>
+                            <div class="card-body" id="upcomingDues"><p class="empty-state">No upcoming dues</p></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3>Overdue Payments</h3></div>
+                            <div class="card-body" id="overduePayments"><p class="empty-state">No overdue payments</p></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3>Recent Payments</h3></div>
+                            <div class="card-body" id="recentPayments"><p class="empty-state">No recent payments</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CUSTOMERS PAGE -->
+                <section id="page-customers" class="page">
+                    <div class="page-actions">
+                        <div class="search-box">
+                            <span class="material-icons-round">search</span>
+                            <input type="text" id="customerSearch" placeholder="Search by name or phone...">
+                        </div>
+                        <button class="btn btn-primary" id="addCustomerBtn">
+                            <span class="material-icons-round">person_add</span> Add Customer
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive" id="customerListContainer">
+                            <table class="data-table" id="customerTable">
+                                <thead><tr>
+                                    <th>Name</th><th>Phone</th><th>Active Loans</th><th>Total Borrowed</th><th>Actions</th>
+                                </tr></thead>
+                                <tbody id="customerTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- LOANS PAGE -->
+                <section id="page-loans" class="page">
+                    <div class="page-actions">
+                        <div class="search-box">
+                            <span class="material-icons-round">search</span>
+                            <input type="text" id="loanSearch" placeholder="Search loans...">
+                        </div>
+                        <div class="filter-group">
+                            <select id="loanStatusFilter" class="form-select">
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="closed">Closed</option>
+                                <option value="overdue">Overdue</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="addLoanBtn">
+                            <span class="material-icons-round">add_card</span> New Loan
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="loanTable">
+                                <thead><tr>
+                                    <th>Customer</th><th>Amount</th><th>Interest</th><th>EMI</th><th>Balance</th><th>Status</th><th>Actions</th>
+                                </tr></thead>
+                                <tbody id="loanTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAYMENTS PAGE -->
+                <section id="page-payments" class="page">
+                    <div class="page-actions">
+                        <div class="search-box">
+                            <span class="material-icons-round">search</span>
+                            <input type="text" id="paymentSearch" placeholder="Search payments...">
+                        </div>
+                        <button class="btn btn-primary" id="addPaymentBtn">
+                            <span class="material-icons-round">add</span> Record Payment
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="paymentTable">
+                                <thead><tr>
+                                    <th>Date</th><th>Customer</th><th>Loan</th><th>Amount</th><th>Mode</th><th>Actions</th>
+                                </tr></thead>
+                                <tbody id="paymentTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SCHEDULE PAGE -->
+                <section id="page-schedule" class="page">
+                    <div class="schedule-tabs">
+                        <button class="tab-btn active" data-tab="calendar">Calendar</button>
+                        <button class="tab-btn" data-tab="list">List View</button>
+                    </div>
+                    <div id="scheduleCalendar" class="calendar-grid card"></div>
+                    <div id="scheduleList" class="card" style="display:none">
+                        <div id="scheduleListBody"></div>
+                    </div>
+                </section>
+
+                <!-- REPORTS PAGE -->
+                <section id="page-reports" class="page">
+                    <div class="report-controls">
+                        <select id="reportType" class="form-select">
+                            <option value="daily">Daily Collection</option>
+                            <option value="monthly">Monthly Profit</option>
+                            <option value="customer">Customer-wise</option>
+                        </select>
+                        <input type="date" id="reportDate" class="form-input">
+                        <button class="btn btn-primary" id="genReportBtn">
+                            <span class="material-icons-round">summarize</span> Generate
+                        </button>
+                        <button class="btn btn-outline" id="exportExcelBtn">
+                            <span class="material-icons-round">table_view</span> Excel
+                        </button>
+                        <button class="btn btn-outline" id="exportExcelBtn">
+                            <span class="material-icons-round">table_chart</span> Excel
+                        </button>
+                    </div>
+                    <div id="reportOutput">
+                        <p class="empty-state">Select report type and date above to generate.</p>
+                    </div>
+                </section>
+
+                <!-- AMC PAGE (SUPER ADMIN ONLY) -->
+                <section id="page-amc" class="page">
+                    <div class="page-actions">
+                        <div class="search-box">
+                            <span class="material-icons-round">search</span>
+                            <input type="text" id="amcSearch" placeholder="Search contracts...">
+                        </div>
+                        <button class="btn btn-primary" id="addAmcBtn">
+                            <span class="material-icons-round">add</span> New AMC Contract
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="amcTable">
+                                <thead><tr>
+                                    <th>Customer/Branch</th><th>Plan</th><th>Validity</th><th>Amount</th><th>Status</th><th>Actions</th>
+                                </tr></thead>
+                                <tbody id="amcTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SETTINGS PAGE -->
+                <!-- Page: Settings -->
+                <section id="page-settings" class="page">
+                    <div class="settings-grid">
+                        <!-- Branch Business Profile -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><span class="material-icons-round">business</span> Branch Profile</h3>
+                                <span class="badge badge-active admin-only" style="display:none">Admin Access</span>
+                            </div>
+                            <div class="card-body">
+                                <form id="branchSettingsForm">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Shop Logo</label>
+                                            <input type="file" class="form-input" id="bsLogo" accept="image/*">
+                                            <div id="bsLogoPreview" class="mt-2" style="max-width:100px"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Shop Name *</label>
+                                            <input type="text" class="form-input" id="bsName" placeholder="Enter shop name">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Address</label>
+                                        <textarea class="form-input" id="bsAddress" placeholder="Full shop address"></textarea>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>License No (LIC.NO)</label>
+                                            <input type="text" class="form-input" id="bsLicNo" placeholder="Registration number">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Mobile Number</label>
+                                            <input type="text" class="form-input" id="bsMobile" placeholder="Contact number">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>GPay Number</label>
+                                            <input type="text" class="form-input" id="bsGPay" placeholder="Payment number">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Payment QR Code</label>
+                                            <input type="file" class="form-input" id="bsQR" accept="image/*">
+                                            <div id="bsQRPreview" class="mt-2" style="max-width:100px"></div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-block admin-only" style="display:none">
+                                        <span class="material-icons-round">save</span> Save Branch Settings
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- System Settings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><span class="material-icons-round">settings</span> System & Rules</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <strong>Dark Mode</strong>
+                                    </div>
+                                    <label class="switch"><input type="checkbox" id="darkModeToggle"><span class="slider"></span></label>
+                                </div>
+                                <div class="setting-row mt-3">
+                                    <div class="setting-info">
+                                        <strong>Late Fee Calculation</strong>
+                                        <p>Enable automatic penalty for overdue payments</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="lateFeeToggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div id="lateFeeGroup" class="form-group mt-3" style="display:none">
+                                    <label>Daily Penalty Rate (%)</label>
+                                    <input type="number" step="0.1" class="form-input" id="lateFeeRate" value="0.5">
+                                </div>
+                                <div class="form-group mt-3 superadmin-only" style="display:none">
+                                    <label>Preferred Backup Drive (F:/ recommended)</label>
+                                    <input type="text" class="form-input" id="backupDrivePath" value="F:\\" placeholder="e.g. F:\">
+                                    <small style="color:#64748b;font-size:10px">Note: Browser may still default to Downloads folder due to security.</small>
+                                </div>
+                                <div class="nav-divider mt-4"></div>
+                                <button class="btn btn-primary btn-block mt-4 admin-only" id="saveSystemSettings" style="display:none">
+                                    <span class="material-icons-round">save</span> Save Rules
+                                </button>
+                                
+                                <div class="mt-4 admin-only" style="display:none">
+                                    <button class="btn btn-sm btn-outline btn-block" id="backupBtn">
+                                        <span class="material-icons-round">cloud_download</span> Backup (JSON)
+                                    </button>
+                                    <button class="btn btn-sm btn-outline btn-block mt-2" id="restoreBtn">
+                                        <span class="material-icons-round">cloud_upload</span> Restore Backup
+                                    </button>
+                                    <input type="file" id="restoreFile" accept=".json" style="display:none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Page: Branches (Superadmin) -->
+                <section id="page-branches" class="page">
+                    <div class="page-header">
+                        <div class="page-actions">
+                            <div class="search-box">
+                                <span class="material-icons-round">search</span>
+                                <input type="text" id="branchSearch" placeholder="Search branches...">
+                            </div>
+                            <button class="btn btn-primary" id="addBranchBtn">
+                                <span class="material-icons-round">add_business</span> Add Branch
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Branch Name</th>
+                                        <th>Location</th>
+                                        <th>Manager</th>
+                                        <th>Staff</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branchTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Page: Staff Management (Branch Admin) -->
+                <section id="page-staff-mgmt" class="page">
+                    <div class="page-header">
+                        <div class="page-actions">
+                            <h3 id="branchNameHeader">My Branch Staff</h3>
+                            <button class="btn btn-primary" id="addStaffBtn">
+                                <span class="material-icons-round">person_add</span> Add Staff Member
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Added On</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staffTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modalContainer">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modal</h3>
+                <button class="btn-icon modal-close" id="modalClose"><span class="material-icons-round">close</span></button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION PANEL -->
+    <div class="notif-panel" id="notifPanel" style="display:none">
+        <div class="notif-header"><h3>Notifications</h3></div>
+        <div class="notif-list" id="notifList"></div>
+    </div>
+
+    <!-- RECEIPT PRINT (hidden) -->
+    <div id="printArea" style="display:none"></div>
+
+    <!-- TOAST -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/branches.js"></script>
+    <script src="js/customers.js"></script>
+    <script src="js/loans.js"></script>
+    <script src="js/payments.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/amc.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/migration.js"></script>
+    <script src="js/app.js"></script>
+    <a href="https://wa.me/919360039283" target="_blank" class="floating-wa" title="Contact Support">
+        <span class="material-icons-round">chat</span>
+    </a>
+
+    <style>
+        .license-badge { display: flex; align-items: center; gap: 6px; background: rgba(99,102,241,0.1); color: #6366f1; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; border: 1px solid rgba(99,102,241,0.2); margin-right: 12px; }
+        .license-badge .material-icons-round { font-size: 14px; }
+        .floating-wa { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background: #25D366; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; transition: transform 0.2s; }
+        .floating-wa:hover { transform: scale(1.1); }
+    </style>
+</body>
+</html>
