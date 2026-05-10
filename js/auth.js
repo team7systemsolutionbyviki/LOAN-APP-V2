@@ -175,7 +175,7 @@ const Auth = {
             const branchId = userData.branchId || Branches.currentBranch || '';
             if (branchId) {
                 const today = new Date().toISOString().split('T')[0];
-                db.collection('amc_contracts').where('branchId', '==', branchId).orderBy('endDate', 'desc').limit(1).onSnapshot(snap => {
+                db.collection('amc_contracts').where('branchId', '==', branchId).onSnapshot(snap => {
                     const expiryBox = document.getElementById('licenseExpiryBox');
                     const expiryDateEl = document.getElementById('licenseExpiryDate');
                     const lockOverlay = document.getElementById('licenseLock');
@@ -183,7 +183,11 @@ const Auth = {
                     const expiryDateTop = document.getElementById('licenseExpiryDateTop');
                     
                     if (!snap.empty) {
-                        const amc = snap.docs[0].data();
+                        // Sort client-side to find the latest expiry
+                        const docs = snap.docs.map(d => d.data());
+                        docs.sort((a, b) => b.endDate.localeCompare(a.endDate));
+                        const amc = docs[0];
+                        
                         const isExpired = amc.endDate < today || amc.status === 'expired';
                         
                         if (expiryDateEl) expiryDateEl.textContent = amc.endDate;
